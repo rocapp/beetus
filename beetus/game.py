@@ -104,8 +104,8 @@ def spawn_moving_platforms():
             # TODO(robbie-c) - add a CMAModelParams
             api_response = client.run_at_time_route_model_run_at_time_post(
                 t0=0,
-                t1=10,
-                n=5,
+                t1=24,
+                n=100,
             )
             if hasattr(api_response, "c") and hasattr(api_response, "t"):
                 for i in range(len(api_response.t)):
@@ -177,7 +177,7 @@ class Player:
         if self.x > scroll_x + SCROLL_BORDER_X:
             last_scroll_x = scroll_x
             scroll_x = min(self.x - SCROLL_BORDER_X, 240 * 8)
-            spawn_enemy(last_scroll_x + 128, scroll_x + 127)
+            spawn_enemy(last_scroll_x + 256, scroll_x + 127)
 
         if self.y >= pyxel.height:
             game_over()
@@ -293,13 +293,13 @@ class MovingPlatform:
         self.y = y
         self.dx = 0.5
         self.width = 24
-        self.height = 4
+        self.height = 5
         self.is_alive = True
 
     def update(self):
         self.x += self.dx
-        if self.dx > 0 and self.x + self.width > scroll_x + 128:
-            self.x = scroll_x + 128 - self.width
+        if self.dx > 0 and self.x + self.width > scroll_x + 256:
+            self.x = scroll_x + 256 - self.width
             self.dx *= -1
         elif self.dx < 0 and self.x < scroll_x:
             self.x = scroll_x
@@ -311,7 +311,7 @@ class MovingPlatform:
 
 class App:
     def __init__(self):
-        pyxel.init(128, 128, title="Pyxel Platformer")
+        pyxel.init(256, 256, title="Pyxel Platformer")
         pyxel.load(os.path.join("assets", "beetus.pyxres"))
 
         # Change enemy spawn tiles invisible
@@ -319,7 +319,7 @@ class App:
 
         global player
         player = Player(0, 0)
-        spawn_enemy(0, 127)
+        spawn_enemy(0, 300)
         spawn_moving_platforms()
 
         pyxel.playm(0, loop=True)
@@ -351,8 +351,8 @@ class App:
 
         # Draw level
         pyxel.camera()
-        pyxel.bltm(0, 0, 0, (scroll_x // 4) % 128, 128, 128, 128)
-        pyxel.bltm(0, 0, 0, scroll_x, 0, 128, 128, TRANSPARENT_COLOR)
+        pyxel.bltm(0, 0, 0, (scroll_x // 4) % 256, 256, 256, 256)
+        pyxel.bltm(0, 0, 0, scroll_x, 0, 256, 256, TRANSPARENT_COLOR)
 
         # Draw characters
         pyxel.camera(scroll_x, 0)
