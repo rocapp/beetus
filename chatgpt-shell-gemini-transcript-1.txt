@@ -1,0 +1,109 @@
+Gemini(flash-latest/Programming)> Is there a correct way to setup a 'game select' menu, e.g. by triggering a new sdl2 instance when a key is pressed? currently the way i implement this in main.py fails because there's already a pyxel instance running
+[snake.py](file:///home/robbiec/Git/beetus/beetus/games/snake.py) 
+
+[main.py](file:///home/robbiec/Git/beetus/beetus/main.py)
+<shell-maker-end-of-prompt>
+
+The issue is that Pyxel applications must run within a single instance and loop. Calling `pyxel.init()` or `pyxel.run()` again inside your `App.update()` method generates the conflict.
+
+The correct pattern is to use **state management** within your main `App` class, where `update` and `draw` methods delegate to the currently active game object. The game object needs a way to signal back to the main app when it's finished.
+
+Here are the diffs to refactor your code:
+
+### `snake.py` (Remove Pyxel startup/cleanup, add quit callback)
+
+```diff
+--- a/snake.py
++++ b/snake.py
+@@ -62,15 +62,11 @@
+ class Snake:
+     """The class that sets up and runs the game."""
+ 
+-    def __init__(self):
+-        """Initiate pyxel, set up initial game variables, and run."""
+-
+-        pyxel.init(
+-            WIDTH, HEIGHT, title="Snake!", fps=20, display_scale=12, capture_scale=6
+-        )
++    def __init__(self, on_quit_callback):
++        """Set up initial game variables and store quit callback."""
+         define_sound_and_music()
+         self.reset()
+-        pyxel.run(self.update, self.draw)
++        self.on_quit_callback = on_quit_callback
+ 
+     def reset(self):
+         """Initiate key variables (direction, snake, apple, score, etc.)""" @@ -98,7 +93,7 @@
+ 
+         if pyxel.btn(pyxel.KEY_Q):
+-            pyxel.quit()
++            self.on_quit_callback()
+ 
+         if pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_START):
+             self.reset()
+@@ -234,6 +229,3 @@
+ 
+     pyxel.musics[0].set([], [2], [3], [4])
+ 
+-
+-if __name__ == '__main__':
+-    Snake()
+
+```
+
+### `main.py` (Implement state management)
+
+The `App` class now manages the `self.current_game` state and delegates `update`/`draw` calls to it.
+
+```diff
+--- a/main.py
++++ b/main.py
+@@ -10,18 +10,31 @@
+     def __init__(self):
+         pyxel.init(160, 120, title="Welcome to beetus 🩸. Hope you have a pfun time.")
+         pyxel.images[0].load(0, 0, "assets/pfun-cutielogo-icon.png")
++        self.current_game = None # State: None for menu, object for current game
+         pyxel.run(self.update, self.draw)
+ 
++    def return_to_menu(self):
++        """Callback to switch state from game back to menu."""
++        self.current_game = None
++        pyxel.stop() # Stop game music/sounds
++
+     def update(self):
++        if self.current_game:
++            # Delegate update to the running game instance
++            self.current_game.update()
++            return
++
++        # Menu update logic
+         if pyxel.btnp(pyxel.KEY_Q):
+             pyxel.quit()
+         if pyxel.btnp(pyxel.KEY_S):
+-            Snake()
++            # Start the Snake game, passing the callback for when it quits
++            self.current_game = Snake(on_quit_callback=self.return_to_menu)
+         
+ 
+     def draw(self):
++        if self.current_game:
++            # Delegate draw to the running game instance
++            self.current_game.draw()
++            return
++
++        # Menu draw logic
+         pyxel.cls(0)
+         pyxel.text(55, 41, "Select a game", pyxel.frame_count % 16)
+         pyxel.blt(61, 66, 0, 0, 0, 38, 16)
+
+```
+
+Gemini(flash-latest/Programming)> 
+
+Gemini(flash-latest/Programming)> 
+
+Gemini(flash-latest/Programming)> 
+
+Gemini(flash-latest/Programming)> 
+
+Gemini(flash-latest/Programming)> 

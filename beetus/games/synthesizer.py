@@ -236,4 +236,6 @@ class App:
             wavetable_editor.draw()
 
 
-App()
+
+if __name__ == '__main__':
+    App()

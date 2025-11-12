@@ -4,4 +4,4 @@
 
 set -e
 
-pyxel package beetus beetus/game.py
+pyxel package beetus beetus/main.py

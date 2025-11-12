@@ -1,4 +1,4 @@
-# beetus/game.py
+# beetus/bubbles.py
 
 ## Reference (built on https://github.com/kitao/pyxel)
 # title: Pyxel Bubbles
@@ -129,4 +129,6 @@ class App:
             pyxel.text(96, 50, "CLICK ON BUBBLE", pyxel.frame_count % 15 + 1)
 
 
-App()
+
+if __name__ == '__main__':
+    App()
