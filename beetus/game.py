@@ -6,7 +6,10 @@
 # license: MIT
 # version: 1.0
 
+import os
 import pyxel
+
+from beetus.client import BeetusClient
 
 TRANSPARENT_COLOR = 2
 SCROLL_BORDER_X = 80
@@ -19,6 +22,7 @@ WALL_TILE_X = 4
 scroll_x = 0
 player = None
 enemies = []
+platforms = []
 
 
 def get_tile(tile_x, tile_y):
@@ -36,9 +40,18 @@ def is_colliding(x, y, is_falling):
             if get_tile(xi, yi)[0] >= WALL_TILE_X:
                 return True
 
-    if is_falling and y % 8 == 1:
-        for xi in range(x1, x2 + 1):
-            if get_tile(xi, y1 + 1) == TILE_FLOOR:
+    if is_falling:
+        if y % 8 == 1:
+            for xi in range(x1, x2 + 1):
+                if get_tile(xi, y1 + 1) == TILE_FLOOR:
+                    return True
+        for p in platforms:
+            if (
+                x + 7 >= p.x
+                and x < p.x + p.width
+                and y + 8 > p.y
+                and y < p.y + p.height
+            ):
                 return True
 
     return False
@@ -82,6 +95,27 @@ def spawn_enemy(left_x, right_x):
                 enemies.append(Enemy3(x * 8, y * 8))
 
 
+def spawn_moving_platforms():
+    """
+    Spawns moving platforms using the BeetusClient.
+    """
+    with BeetusClient() as client:
+        try:
+            # TODO(robbie-c) - add a CMAModelParams
+            api_response = client.run_at_time_route_model_run_at_time_post(
+                t0=0,
+                t1=10,
+                n=5,
+            )
+            if hasattr(api_response, "c") and hasattr(api_response, "t"):
+                for i in range(len(api_response.t)):
+                    x = (api_response.t[i] * 20) + 30
+                    y = 100 - (api_response.c[i] * 15)
+                    platforms.append(MovingPlatform(x, y))
+        except Exception as e:
+            print(f"Error calling API: {e}")
+
+
 def cleanup_entities(entities):
     for i in range(len(entities) - 1, -1, -1):
         if not entities[i].is_alive:
@@ -122,7 +156,23 @@ class Player:
             self.y = 0
 
         self.dx = int(self.dx * 0.8)
-        self.is_falling = self.y > last_y
+
+        on_platform = None
+        for p in platforms:
+            if (
+                self.x + 7 >= p.x
+                and self.x < p.x + p.width
+                and abs((self.y + 8) - p.y) < 2
+            ):
+                on_platform = p
+                break
+
+        if on_platform:
+            self.is_falling = False
+            self.y = on_platform.y - 8
+            self.x += on_platform.dx
+        else:
+            self.is_falling = self.y > last_y
 
         if self.x > scroll_x + SCROLL_BORDER_X:
             last_scroll_x = scroll_x
@@ -237,8 +287,26 @@ class Enemy3Bullet:
         pyxel.blt(self.x, self.y, 0, u, 32, 8, 8, TRANSPARENT_COLOR)
 
 
-import os
+class MovingPlatform:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.dx = 0.5
+        self.width = 24
+        self.height = 4
+        self.is_alive = True
 
+    def update(self):
+        self.x += self.dx
+        if self.dx > 0 and self.x + self.width > scroll_x + 128:
+            self.x = scroll_x + 128 - self.width
+            self.dx *= -1
+        elif self.dx < 0 and self.x < scroll_x:
+            self.x = scroll_x
+            self.dx *= -1
+
+    def draw(self):
+        pyxel.rect(self.x, self.y, self.width, self.height, 13)
 
 
 class App:
@@ -252,6 +320,7 @@ class App:
         global player
         player = Player(0, 0)
         spawn_enemy(0, 127)
+        spawn_moving_platforms()
 
         pyxel.playm(0, loop=True)
         pyxel.run(self.update, self.draw)
@@ -274,6 +343,9 @@ class App:
 
         cleanup_entities(enemies)
 
+        for p in platforms:
+            p.update()
+
     def draw(self):
         pyxel.cls(0)
 
@@ -287,6 +359,8 @@ class App:
         player.draw()
         for enemy in enemies:
             enemy.draw()
+        for p in platforms:
+            p.draw()
 
 
 def game_over():
