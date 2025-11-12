@@ -10,28 +10,16 @@ from collections import deque
 import pyxel
 
 from beetus.params import SnakeParams, Point
+from beetus.games.base import *
+from beetus.games.perlin_noise import PerlinNoiseApp
 
 
-###################
-# The game itself #
-###################
-
-
-def dummy_method():
-    """does nothing (as if...)"""
-    pass
-
-
-class Snake:
-    """The class that sets up and runs the game."""
-
-    @property
-    def on_quit_callback(self):
-        return self._on_quit_callback
+class Snake(GameApp):
+    """The class that sets up and runs the snake game."""
 
     def __init__(self, params: SnakeParams, on_quit_callback=dummy_method):
         """Initiate pyxel, set up initial game variables, and run."""
-        self._on_quit_callback = on_quit_callback
+        super().__init__(on_quit_callback=on_quit_callback)
         self.params = params
         define_sound_and_music()
         self.reset()
@@ -45,7 +33,6 @@ class Snake:
         self.death = False
         self.score = 0
         self.generate_apple()
-
         pyxel.playm(0, loop=True)
 
     ##############
@@ -61,10 +48,6 @@ class Snake:
             self.update_snake()
             self.check_death()
             self.check_apple()
-
-        if pyxel.btn(pyxel.KEY_Q):
-            # perform the specified quit callback method
-            self.on_quit_callback()
 
         if pyxel.btnp(pyxel.KEY_R) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_START):
             self.reset()
@@ -108,9 +91,7 @@ class Snake:
 
     def generate_apple(self):
         """Generate an apple randomly."""
-
         snake_pixels = set(self.snake)
-
         self.apple = self.snake[0]
         while self.apple in snake_pixels:
             x = pyxel.rndi(0, self.params.width - 1)

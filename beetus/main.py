@@ -4,6 +4,7 @@
 
 import pyxel
 
+from beetus.games.perlin_noise import PerlinNoiseApp
 from beetus.games.snake import Snake
 from beetus.params import SnakeParams
 
@@ -20,14 +21,16 @@ class App:
         )
         pyxel.images[0].load(0, 0, "assets/pfun-cutielogo-icon.png")
         self.current_game = None  # State: None for menu, object for current game
-        self.snake_params = SnakeParams(width=APP_WIDTH, height=APP_HEIGHT)  # Instantiate default SnakeParams
+        # Instantiate default SnakeParams
+        self.snake_params = SnakeParams(width=APP_WIDTH, height=APP_HEIGHT)
         pyxel.run(self.update, self.draw)
 
     def return_to_menu(self):
         """Callback to switch state from game back to menu."""
         self.current_game = None
         pyxel.stop()  # Stop game music/sounds
-        self.__init__()  # Re-initialize to show menu
+        pyxel.reset()  # Reset pyxel state
+        pyxel.play(0, 0, loop=True)  # Play menu music/sounds
 
     def update(self):
         if self.current_game:
@@ -41,6 +44,10 @@ class App:
             # Start the Snake game, passing the callback for when it quits
             self.current_game = Snake(
                 params=self.snake_params, on_quit_callback=self.return_to_menu)
+        if pyxel.btnp(pyxel.KEY_P):
+            # Start the Perlin Noise game, passing the callback for when it quits
+            self.current_game = PerlinNoiseApp(
+                on_quit_callback=self.return_to_menu)
 
     def draw(self):
         if self.current_game:
@@ -56,10 +63,11 @@ class App:
         #: pyxel.blt = blt(x, y, img, u, v, w, h, colkey=None, rotate=None, scale=None)
         pyxel.blt(x=61, y=66, img=0, u=0, v=0, w=38, h=16)
         # Game options:
-        #: pyxel.text = text(x, y, s, col, font=None)
         # dejavu_font = pyxel.Font("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
         pyxel.text(x=60, y=70, s="[S]nake",
                    col=pyxel.frame_count % 16)
+        pyxel.text(x=60, y=90, s="[P]erlin Noise", col=8)
+        pyxel.text(x=60, y=111, s="Press [Q] to quit", col=7)
 
 
 App()

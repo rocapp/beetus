@@ -4,8 +4,10 @@
 
 import logging
 
+from typing import Dict
+
 from beetus.client import BeetusClient
-from beetus.params import PlatformParams
+from beetus.params import PlatformParams, WaveParams
 from beetus.pieces import MovingPlatform, MovingWave
 from pfun_cma_model.engine.cma_model_params import CMAModelParams
 
@@ -22,23 +24,26 @@ class PFunGenerator:
 
     @property
     def client(self):
+        """Returns the BeetusClient instance."""
         return self._client
 
-    async def query_pfun(self):
+    async def query_pfun(self, t0: int = 0, t1: int = 24, n: int = 100) -> Dict:  # type: ignore
+        """Queries the PFun API and returns the response."""
         with self.client as client:
             try:
                 api_response = await client.run_at_time_route_model_run_at_time_post(
-                    t0=0,
-                    t1=24,
-                    n=100,
-                    params=self.model_params
-                )
+                    t0=t0,
+                    t1=t1,
+                    n=n,
+                    cma_model_params=self.model_params  # type: ignore
+                )  # type: ignore
                 return api_response
             except Exception as e:
                 print(f"Error calling API: {e}")
 
     async def generate(self):
-        # implement for subclasses
+        """Generates dynamics/procedures based on the PFun API response."""
+        raise NotImplementedError
         pass
 
 
@@ -83,20 +88,22 @@ class PFunPlatformGenerator(PFunGenerator):
 class PFunWaveGenerator(PFunGenerator):
     """Generates a wave based on the PFun API response."""
 
-    def __init__(self, model_params: CMAModelParams = None):
+    def __init__(self, model_params: CMAModelParams, wave_params: WaveParams):
         super().__init__(model_params)
         self.wave_pieces = []
+        self.wave_params = wave_params
 
     async def generate_wave(self):
         """Generates a wave based on the PFun API response."""
         api_response = await self.query_pfun()
-        # Process the API response to generate the wave
+        # Process the API response
         for i in range(len(api_response.t)):
             x = (api_response.t[i] * self.wave_params.width) + \
                 self.wave_params.x_offset
             y = self.wave_params.y_offset - \
                 (api_response.c[i] * self.wave_params.height)
-            self.wave_pieces.append(MovingWave(x, y))
+            self.wave_pieces.append(MovingWave(
+                x, y, **self.wave_params.piece_kwargs))
 
     async def generate(self):
         """Generates a wave based on the PFun API response."""
