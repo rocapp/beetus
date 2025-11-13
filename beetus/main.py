@@ -77,11 +77,16 @@ class BeetusGame:
         logging.info("Starting main game loop.")
         while self.running:
             self.clock.tick(self.game_params.fps)
-            print(pygame.event.get())
+            # Get events once per frame
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    logging.info("Quit event detected. Exiting game loop.")
+                    logging.info(
+                        "Quit event detected (window closed). Exiting game loop.")
                     self.running = False
+                if event.type == plocals.KEYDOWN:
+                    if event.key == plocals.K_q:
+                        logging.info("Q key pressed. Exiting game loop.")
+                        self.running = False
             await self._blit_everything()
 
 
