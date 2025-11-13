@@ -1,3 +1,12 @@
+# custom additions for pygame-web/pygbag
+*.wav
+*.mp3
+*.pyc
+*.egg-info
+*-pygbag.???
+/build
+/dist
+
 # Created by https://www.toptal.com/developers/gitignore/api/python,emacs
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,emacs
 

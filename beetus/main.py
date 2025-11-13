@@ -1,73 +1,110 @@
 # #
-# beetus/main.py : games menu entrypoint
+# beetus/main.py : game loop for Beetus
 # #
-
-import pyxel
-
-from beetus.games.perlin_noise import PerlinNoiseApp
-from beetus.games.snake import Snake
-from beetus.params import SnakeParams
-
-APP_WIDTH = 160
-APP_HEIGHT = 120
+import sys
+import logging
+import asyncio
+import pygame
+import pygame.locals as plocals
+from beetus.params import GameParams
 
 
-class App:
-    def __init__(self):
-        #: pyxel.init = init(width, height, title=None, fps=None, quit_key=None, display_scale=None, capture_scale=None, capture_sec=None)
-        pyxel.init(
-            APP_WIDTH, APP_HEIGHT,
-            title="Welcome to beetus 🩸. Hope you have a pfun time."
-        )
-        pyxel.images[0].load(0, 0, "assets/pfun-cutielogo-icon.png")
-        self.current_game = None  # State: None for menu, object for current game
-        # Instantiate default SnakeParams
-        self.snake_params = SnakeParams(width=APP_WIDTH, height=APP_HEIGHT)
-        pyxel.run(self.update, self.draw)
-
-    def return_to_menu(self):
-        """Callback to switch state from game back to menu."""
-        self.current_game = None
-        pyxel.stop()  # Stop game music/sounds
-        pyxel.reset()  # Reset pyxel state
-        pyxel.play(0, 0, loop=True)  # Play menu music/sounds
-
-    def update(self):
-        if self.current_game:
-            # Game is running, delegate update to the current running game instance
-            self.current_game.update()
-            return
-        # Menu update logic
-        if pyxel.btnp(pyxel.KEY_Q):
-            pyxel.quit()
-        if pyxel.btnp(pyxel.KEY_S):
-            # Start the Snake game, passing the callback for when it quits
-            self.current_game = Snake(
-                params=self.snake_params, on_quit_callback=self.return_to_menu)
-        if pyxel.btnp(pyxel.KEY_P):
-            # Start the Perlin Noise game, passing the callback for when it quits
-            self.current_game = PerlinNoiseApp(
-                on_quit_callback=self.return_to_menu)
-
-    def draw(self):
-        if self.current_game:
-            # Delegate draw to the running game instance
-            self.current_game.draw()
-            return
-
-        # Menu draw logic
-        pyxel.cls(0)
-        # Instructions:
-        pyxel.text(55, 41, "Select a game", pyxel.frame_count % 16)
-        # Draw the logo sprite below
-        #: pyxel.blt = blt(x, y, img, u, v, w, h, colkey=None, rotate=None, scale=None)
-        pyxel.blt(x=61, y=66, img=0, u=0, v=0, w=38, h=16)
-        # Game options:
-        # dejavu_font = pyxel.Font("/usr/share/fonts/dejavu/DejaVuSerif.ttf")
-        pyxel.text(x=60, y=70, s="[S]nake",
-                   col=pyxel.frame_count % 16)
-        pyxel.text(x=60, y=90, s="[P]erlin Noise", col=8)
-        pyxel.text(x=60, y=111, s="Press [Q] to quit", col=7)
+logging.basicConfig(level=logging.INFO)
 
 
-App()
+class BeetusGame:
+    """Main game class
+    """
+
+    def __init__(self, game_params: GameParams):
+        self.game_params = game_params
+        # Initialize screen
+        self.screen = pygame.display.set_mode(
+            (self.game_params.screen_width, self.game_params.screen_height))
+        # Initialize caption
+        pygame.display.set_caption(self.game_params.title)
+        # Initialize clock
+        self.clock = pygame.time.Clock()
+        self.running = True
+
+    def setup_bg(self):
+        """Setup background
+        """
+        # Fill background
+        self.background: pygame.Surface = pygame.Surface(
+            self.screen.get_size())  # type: ignore
+        self.background: pygame.Surface = \
+            self.background.convert()  # type: ignore
+        self.background.fill(self.game_params.bg_color)
+
+    def display_text(
+        self,
+        input_text: str,
+        position: tuple,
+        font_size: int = 36,
+        color: tuple = (255, 255, 255)
+    ):
+        """Display text on the screen
+        """
+        font = pygame.font.Font(None, font_size)
+        text = font.render(input_text, 1, color)
+        textpos = text.get_rect()
+        # move to position
+        textpos.centerx = self.background.get_rect().centerx + position[0]
+        textpos.centery = self.background.get_rect().centery + position[1]
+        self.background.blit(text, textpos)
+
+    def setup(self):
+        """Setup game elements
+        """
+        self.setup_bg()
+        self.display_text("Welcome to Beetus!", (0, -50), font_size=48)
+        self.display_text("Press any key to start", (0, 50), font_size=36)
+
+    async def _blit_everything(self):
+        """Blit everything to the screen
+        """
+        # Blit everything to the screen
+        self.screen.blit(self.background, (0, 0))
+        pygame.display.flip()
+        await asyncio.sleep(0)
+
+    async def run(self):
+        """Main game loop
+        """
+        self.setup()  # Setup game elements
+        await self._blit_everything()  # Initial blit
+        logging.info("Starting main game loop.")
+        while self.running:
+            self.clock.tick(self.game_params.fps)
+            print(pygame.event.get())
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    logging.info("Quit event detected. Exiting game loop.")
+                    self.running = False
+            await self._blit_everything()
+
+
+async def main():
+    """Main function (entry point)
+    """
+    # Initialize pygame (some linters may report pygame has no 'init' member)
+    try:
+        pygame.init()  # type: ignore[no-member]  # pylint: disable=no-member
+    except Exception:
+        # If pygame is stubbed/missing, continue gracefully
+        logging.warning("Pygame initialization failed.")
+    game_params = GameParams()
+    game = BeetusGame(game_params)
+    await game.run()
+    try:
+        pygame.quit()  # type: ignore[no-member]  # pylint: disable=no-member
+    except Exception:
+        logging.warning("Pygame quit failed.")
+    # Exit the program gracefully
+    sys.exit()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+# # End of beetus/main.py #

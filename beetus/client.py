@@ -8,7 +8,7 @@ class BeetusClient:
         # Defining the host is optional and defaults to https://pfun-cma-model-446025415469.us-central1.run.app
         # See configuration.py for a list of all supported configuration parameters.
         self.configuration = openapi_client.Configuration(
-            host = "https://pfun-cma-model-446025415469.us-central1.run.app"
+            host="https://pfun-cma-model-446025415469.us-central1.run.app"
         )
 
     def __enter__(self):
@@ -34,13 +34,13 @@ def main():
             print("The response of DefaultApi->default_params_params_default_get:\n")
             pprint(api_response)
         except ApiException as e:
-            print("Exception when calling DefaultApi->default_params_params_default_get: %s\n" % e)
+            print(
+                "Exception when calling DefaultApi->default_params_params_default_get: %s\n" % e)
 
     with BeetusClient() as client_instance:
         test_default_params_with_ctx(client_instance)
 
     print("Finished testing beetus openapi client.")
-
 
 
 if __name__ == '__main__':

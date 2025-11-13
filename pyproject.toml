@@ -8,6 +8,8 @@ dependencies = [
     "openapi-client>=0.1.0",
     "pfun-cma-model",
     "pygame>=2.6.1",
+    "pygame-menu>=4.5.2",
+    "Setuptools<81"
 ]
 
 [build-system]

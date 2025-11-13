@@ -3,13 +3,13 @@
 # #
 
 import logging
-
 from typing import Dict
+
+from pfun_cma_model.engine.cma_model_params import CMAModelParams
 
 from beetus.client import BeetusClient
 from beetus.params import PlatformParams, WaveParams
 from beetus.pieces import MovingPlatform, MovingWave
-from pfun_cma_model.engine.cma_model_params import CMAModelParams
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
